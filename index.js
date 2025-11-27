@@ -8,7 +8,7 @@ app.use(express.json());
 // Rutas
 app.get('/', (req, res) => {
   res.json({ 
-message: '¡Hola! Deployment automático funcionando - VERSION 2',    version: '1.0.0'
+message: '¡GitHub Actions funcionando! - VERSION 2.0',    version: '1.0.0'
   });
 });
 
