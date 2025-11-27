@@ -1,0 +1,29 @@
+name: Blue-Green Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Deploy with Blue-Green strategy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/deployer/app
+            git fetch origin
+            git reset --hard origin/main
+            chmod +x app/deploy-blue-green.sh
+            chmod +x app/rollback.sh
+            chmod +x app/status.sh
+            ./app/deploy-blue-green.sh
