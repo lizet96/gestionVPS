@@ -8,7 +8,7 @@ app.use(express.json());
 // Rutas
 app.get('/', (req, res) => {
   res.json({ 
-message: '¡GitHub Actions funcionando! - VERSION 2.0',    version: '1.0.0'
+message: '¡Workflow funcionando! - VERSION 2.0',    version: '1.0.0'
   });
 });
 
