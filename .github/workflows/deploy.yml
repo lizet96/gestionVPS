@@ -3,7 +3,7 @@ name: Blue-Green Deploy to VPS
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -22,7 +22,7 @@ jobs:
           script: |
             cd /home/deployer/app
             git fetch origin
-            git reset --hard origin/main
+            git reset --hard origin/master
             chmod +x app/deploy-blue-green.sh
             chmod +x app/rollback.sh
             chmod +x app/status.sh
