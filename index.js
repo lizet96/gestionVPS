@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ENVIRONMENT = process.env.ENVIRONMENT || 'UNKNOWN';
 
 // Middleware
 app.use(express.json());
@@ -8,13 +9,17 @@ app.use(express.json());
 // Rutas
 app.get('/', (req, res) => {
   res.json({ 
-message: '¡Workflow funcionando! - VERSION 2.0',    version: '1.0.0'
+    message: `🚀 Deployment automático funcionando!`,
+    environment: ENVIRONMENT,
+    color: ENVIRONMENT === 'blue' ? '🔵 AZUL' : '🟢 VERDE',
+    version: '2.0'
   });
 });
 
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK',
+    environment: ENVIRONMENT,
     uptime: process.uptime(),
     timestamp: new Date().toISOString()
   });
@@ -39,5 +44,6 @@ app.post('/api/users', (req, res) => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`🎨 Ambiente: ${ENVIRONMENT} ${ENVIRONMENT === 'blue' ? '🔵' : '🟢'}`);
 });
