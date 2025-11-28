@@ -1,19 +1,21 @@
 #!/bin/bash
 
-echo "🚀 Iniciando Blue-Green Deployment..."
+log() { printf "[BG] %s\n" "$1"; }
+ok() { printf "[OK] %s\n" "$1"; }
+warn() { printf "[WARN] %s\n" "$1"; }
+fail() { printf "[FAIL] %s\n" "$1"; }
 
-# Variables
+log "Inicio de despliegue Blue-Green"
+
 IMAGE_NAME="gps-backend"
 PORT_BLUE=3001
 PORT_GREEN=3002
 NGINX_PORT=3000
 
-# Detectar cuál está activo actualmente
 ACTIVE_ENV=$(cat /tmp/active_env 2>/dev/null || echo "none")
 
-echo "📊 Ambiente activo actual: $ACTIVE_ENV"
+echo " Ambiente activo actual: $ACTIVE_ENV"
 
-# Determinar el nuevo ambiente
 if [ "$ACTIVE_ENV" == "blue" ]; then
     NEW_ENV="green"
     NEW_PORT=$PORT_GREEN
@@ -30,19 +32,17 @@ else
     COLOR_NAME="AZUL"
 fi
 
-echo "$COLOR_EMOJI Desplegando en ambiente: $NEW_ENV ($COLOR_NAME) en puerto $NEW_PORT"
+log "Objetivo: entorno $NEW_ENV ($COLOR_NAME) en puerto $NEW_PORT"
 
-# Construir nueva imagen
-echo "🔨 Construyendo imagen Docker..."
+
+log "Construyendo imagen Docker: ${IMAGE_NAME}:${NEW_ENV}"
 docker build -t ${IMAGE_NAME}:${NEW_ENV} .
 
-# Detener y eliminar contenedor anterior del nuevo ambiente (si existe)
-echo "🧹 Limpiando ambiente $NEW_ENV..."
+log "Limpieza del entorno $NEW_ENV"
 docker stop backend-app-${NEW_ENV} 2>/dev/null || true
 docker rm backend-app-${NEW_ENV} 2>/dev/null || true
 
-# Iniciar nuevo contenedor CON VARIABLE DE ENTORNO
-echo "$COLOR_EMOJI Iniciando contenedor en ambiente $NEW_ENV ($COLOR_NAME)..."
+log "Arrancando contenedor backend-app-${NEW_ENV} en puerto ${NEW_PORT}"
 docker run -d \
   --name backend-app-${NEW_ENV} \
   -p ${NEW_PORT}:3000 \
@@ -50,28 +50,25 @@ docker run -d \
   --restart unless-stopped \
   ${IMAGE_NAME}:${NEW_ENV}
 
-# Esperar a que el contenedor esté listo
-echo "⏳ Esperando que el servicio esté listo..."
+log "Esperando disponibilidad del servicio..."
 sleep 5
 
-# Verificar que el nuevo contenedor funciona
-echo "🔍 Verificando salud del nuevo ambiente..."
+log "Verificando salud del entorno $NEW_ENV"
 HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:${NEW_PORT}/api/health)
 
 if [ "$HEALTH_CHECK" != "200" ]; then
-    echo "❌ ERROR: El nuevo ambiente no responde correctamente"
-    echo "🔄 Rollback: manteniendo ambiente $OLD_ENV activo"
+    fail "El entorno $NEW_ENV no respondió al health-check (HTTP $HEALTH_CHECK)"
+    warn "Manteniendo activo: $OLD_ENV"
     docker stop backend-app-${NEW_ENV}
     docker rm backend-app-${NEW_ENV}
     exit 1
 fi
 
-echo "✅ Nuevo ambiente funcionando correctamente"
+echo " Nuevo ambiente funcionando correctamente"
 
-# Cambiar NGINX para apuntar al nuevo ambiente
-echo "🔀 Cambiando tráfico a ambiente $NEW_ENV ($COLOR_NAME)..."
+log "Conmutando NGINX hacia $NEW_ENV ($COLOR_NAME)"
 
-# Crear configuración de NGINX
+
 sudo tee /etc/nginx/sites-available/backend-${NEW_ENV}.conf > /dev/null <<EOF
 server {
     listen 80;
@@ -90,41 +87,35 @@ server {
 }
 EOF
 
-# Eliminar link simbólico anterior
 sudo rm /etc/nginx/sites-enabled/backend-* 2>/dev/null || true
 
-# Crear nuevo link simbólico
 sudo ln -s /etc/nginx/sites-available/backend-${NEW_ENV}.conf /etc/nginx/sites-enabled/
 
-# Verificar configuración de NGINX
+
 sudo nginx -t
 
-# Recargar NGINX
+
 sudo systemctl reload nginx
 
-# Guardar ambiente activo
 echo "$NEW_ENV" > /tmp/active_env
 
-echo "✅ Tráfico redirigido a ambiente $NEW_ENV ($COLOR_NAME)"
+echo " Tráfico redirigido a ambiente $NEW_ENV ($COLOR_NAME)"
 
-# Esperar un poco antes de detener el ambiente anterior
-echo "⏳ Esperando 10 segundos antes de detener ambiente anterior..."
+echo " Esperando 10 segundos antes de detener ambiente anterior..."
 sleep 10
 
-# Detener ambiente anterior (pero no eliminarlo por si necesitamos rollback)
 if [ "$ACTIVE_ENV" != "none" ]; then
-    echo "🛑 Deteniendo ambiente anterior ($OLD_ENV)..."
+    echo " Deteniendo ambiente anterior ($OLD_ENV)..."
     docker stop backend-app-${OLD_ENV} 2>/dev/null || true
-    echo "💾 Ambiente $OLD_ENV detenido pero conservado para rollback"
+    echo " Ambiente $OLD_ENV detenido pero conservado para rollback"
 fi
 
 echo ""
-echo "🎉 =================================="
-echo "✅ DESPLIEGUE COMPLETADO"
-echo "🎉 =================================="
-echo "$COLOR_EMOJI Ambiente activo: $NEW_ENV ($COLOR_NAME)"
-echo "🔌 Puerto interno: $NEW_PORT"
-echo "🌍 Acceso público: http://$(curl -s ifconfig.me)"
-echo "🔵 Blue (3001): $(docker ps --filter name=backend-app-blue --format '{{.Status}}' 2>/dev/null || echo '⏹️  Detenido')"
-echo "🟢 Green (3002): $(docker ps --filter name=backend-app-green --format '{{.Status}}' 2>/dev/null || echo '⏹️  Detenido')"
-echo "🎉 =================================="
+echo "================ Blue-Green Summary ================"
+ok "Despliegue completado"
+log "Activo: $NEW_ENV ($COLOR_NAME)"
+log "Puerto interno: $NEW_PORT"
+log "Acceso público: http://$(curl -s ifconfig.me)"
+log "Blue (3001): $(docker ps --filter name=backend-app-blue --format '{{.Status}}' 2>/dev/null || echo 'Detenido')"
+log "Green (3002): $(docker ps --filter name=backend-app-green --format '{{.Status}}' 2>/dev/null || echo 'Detenido')"
+echo "===================================================="

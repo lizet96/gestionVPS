@@ -2,17 +2,18 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ENVIRONMENT = process.env.ENVIRONMENT || 'UNKNOWN';
+const log = (...args) => console.log('[APP]', ...args);
 
 // Middleware
 app.use(express.json());
 
 // Rutas
 app.get('/', (req, res) => {
-  res.json({ 
-    message: `🚀 Deployment automático funcionando!`,
+  res.json({
+    message: 'Servicio activo con estrategia Blue-Green',
     environment: ENVIRONMENT,
-    color: ENVIRONMENT === 'blue' ? '🔵 AZUL' : '🟢 VERDE',
-    version: '2.0'
+    color: ENVIRONMENT === 'blue' ? 'AZUL 🔷' : 'VERDE 🟩',
+    version: '2.1'
   });
 });
 
@@ -27,9 +28,9 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/users', (req, res) => {
   const users = [
-    { id: 1, name: 'Juan', email: 'juan@example.com' },
-    { id: 2, name: 'María', email: 'maria@example.com' },
-    { id: 3, name: 'Pedro', email: 'pedro@example.com' }
+    { id: 1, name: 'Luz', email: 'luz@example.com' },
+    { id: 2, name: 'Diego', email: 'diego@example.com' },
+    { id: 3, name: 'Sofia', email: 'sofia@example.com' }
   ];
   res.json(users);
 });
@@ -37,13 +38,13 @@ app.get('/api/users', (req, res) => {
 app.post('/api/users', (req, res) => {
   const newUser = req.body;
   res.status(201).json({
-    message: 'Usuario creado',
+    message: 'Usuario registrado',
     user: newUser
   });
 });
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`🎨 Ambiente: ${ENVIRONMENT} ${ENVIRONMENT === 'blue' ? '🔵' : '🟢'}`);
+  log(`Servidor iniciado en puerto ${PORT}`);
+  log(`Entorno: ${ENVIRONMENT} ${ENVIRONMENT === 'blue' ? '🔷' : '🟩'}`);
 });
