@@ -10,7 +10,7 @@ app.use(express.json());
 // Rutas
 app.get('/', (req, res) => {
   res.json({
-    message: 'Servicio activo con estrategia Blue-Green',
+    message: 'Servicio activo con estrategia Bllllue-Green',
     environment: ENVIRONMENT,
     color: ENVIRONMENT === 'blue' ? 'AZUL 🔷' : 'VERDE 🟩',
     version: '2.1'
